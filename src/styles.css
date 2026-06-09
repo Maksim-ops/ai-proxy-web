@@ -361,7 +361,28 @@ select {
 
 .table-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.ssh-status-cell {
+  width: 72px;
+}
+
+.ssh-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+}
+
+.ssh-indicator--connected {
+  background: var(--success);
+}
+
+.ssh-indicator--disconnected {
+  background: var(--danger);
 }
 
 .crud-layout {
@@ -620,4 +641,116 @@ select {
   letter-spacing: 0.12em;
   color: var(--accent);
   font-size: 11px;
+}
+
+.badge--danger {
+  background: rgba(255, 138, 128, 0.18);
+  color: #ffd2cf;
+}
+
+.panel__header--tight {
+  margin-bottom: 14px;
+}
+
+.panel--scope {
+  padding: 18px 22px;
+}
+
+.scope-filter-bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 240px)) auto;
+  gap: 16px;
+  align-items: end;
+}
+
+.scope-filter-bar__actions {
+  display: flex;
+  align-items: end;
+}
+
+.crud-table--full {
+  width: 100%;
+}
+
+.crud-row--neutral td {
+  background: rgba(151, 187, 221, 0.08);
+}
+
+.crud-row--master td {
+  background: rgba(15, 68, 40, 0.58);
+}
+
+.crud-row--danger td {
+  background: rgba(255, 138, 128, 0.14);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(1, 7, 12, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.modal-card {
+  width: min(680px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid var(--panel-border);
+  border-radius: 24px;
+  background: rgba(8, 18, 28, 0.98);
+  box-shadow: var(--shadow);
+}
+
+.modal-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.modal-card__header h3 {
+  margin: 0 0 6px;
+}
+
+.modal-card__header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.modal-card__form {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.server-card--neutral {
+  background: rgba(151, 187, 221, 0.08);
+}
+
+.server-card--danger {
+  border-color: rgba(255, 138, 128, 0.26);
+  background: rgba(76, 15, 19, 0.42);
+}
+
+@media (max-width: 1080px) {
+  .scope-filter-bar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .modal-backdrop {
+    padding: 12px;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+  }
 }

@@ -7,6 +7,7 @@ const props = defineProps({
   servers: { type: Array, default: () => [] },
   title: { type: String, default: 'Command runner' },
   description: { type: String, default: 'Submit commands the same way the CLI does, then choose whether to stay here or open the terminal stream.' },
+  autoOpen: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['started', 'queued'])
@@ -19,12 +20,13 @@ const running = ref(false)
 const checking = ref(false)
 
 const availableServers = computed(() => props.servers.filter((item) => item.enabled))
+const runLabel = computed(() => (props.autoOpen ? 'Run command' : 'Open in stream'))
 
 watch(
   availableServers,
   (items) => {
-    if (!server.value && items.length > 0) {
-      server.value = items[0].name
+    if (!items.some((item) => item.name === server.value)) {
+      server.value = items[0]?.name || ''
     }
   },
   { immediate: true },
@@ -99,14 +101,14 @@ async function submit(mode = 'queue') {
     </div>
 
     <div class="button-row">
-      <button class="button button--ghost" :disabled="checking || running" @click="runCheck">
+      <button class="button button--ghost" :disabled="checking || running || !server" @click="runCheck">
         {{ checking ? 'Checking...' : 'Policy check' }}
       </button>
-      <button class="button button--ghost" :disabled="running" @click="submit('queue')">
+      <button class="button button--ghost" :disabled="running || !server" @click="submit('queue')">
         {{ running ? 'Submitting...' : 'Queue only' }}
       </button>
-      <button class="button" :disabled="running" @click="submit('open')">
-        {{ running ? 'Submitting...' : 'Open in stream' }}
+      <button class="button" :disabled="running || !server" @click="submit('open')">
+        {{ running ? 'Submitting...' : runLabel }}
       </button>
     </div>
 

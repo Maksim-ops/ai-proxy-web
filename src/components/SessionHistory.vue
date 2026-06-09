@@ -1,9 +1,14 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { apiRequest } from '../lib/api'
+import { matchesScope, matchesTextSearch } from '../lib/scope'
 
 const props = defineProps({
   limit: { type: Number, default: 120 },
+  teamId: { type: [String, Number], default: '' },
+  projectId: { type: [String, Number], default: '' },
+  searchQuery: { type: String, default: '' },
+  projects: { type: Array, default: () => [] },
 })
 
 const loading = ref(true)
@@ -13,6 +18,12 @@ const selectedRequestId = ref('')
 const detail = ref(null)
 const detailLoading = ref(false)
 const deletingRequestId = ref('')
+
+const filteredSessions = computed(() => sessions.value.filter((item) => matchesScope(item, {
+  teamId: props.teamId,
+  projectId: props.projectId,
+  projects: props.projects,
+}) && matchesTextSearch(item, props.searchQuery)))
 
 function pad(value) {
   return String(value).padStart(2, '0')
@@ -68,18 +79,22 @@ function formatRange(startedAt, finishedAt) {
     : `${formatStamp(start)} - ${formatStamp(finish)}`
 }
 
+function ensureSelectedVisible() {
+  if (!filteredSessions.value.some((item) => item.request_id === selectedRequestId.value)) {
+    selectedRequestId.value = filteredSessions.value[0]?.request_id || ''
+  }
+  if (!selectedRequestId.value) {
+    detail.value = null
+  }
+}
+
 async function loadSessions() {
   loading.value = true
   error.value = ''
   try {
     const payload = await apiRequest(`/api/v1/sessions?limit=${props.limit}`)
     sessions.value = payload.sessions || []
-    if (!selectedRequestId.value && sessions.value.length > 0) {
-      selectedRequestId.value = sessions.value[0].request_id
-    }
-    if (selectedRequestId.value && !sessions.value.some((item) => item.request_id === selectedRequestId.value)) {
-      selectedRequestId.value = sessions.value[0]?.request_id || ''
-    }
+    ensureSelectedVisible()
   } catch (err) {
     error.value = err.message
   } finally {
@@ -112,12 +127,7 @@ async function removeSession(item) {
   try {
     await apiRequest(`/api/v1/sessions/${item.request_id}`, { method: 'DELETE' })
     sessions.value = sessions.value.filter((entry) => entry.request_id !== item.request_id)
-    if (selectedRequestId.value === item.request_id) {
-      selectedRequestId.value = sessions.value[0]?.request_id || ''
-      if (!selectedRequestId.value) {
-        detail.value = null
-      }
-    }
+    ensureSelectedVisible()
   } catch (err) {
     error.value = err.message
   } finally {
@@ -128,6 +138,10 @@ async function removeSession(item) {
 watch(selectedRequestId, (value) => {
   loadDetail(value)
 })
+
+watch(filteredSessions, () => {
+  ensureSelectedVisible()
+}, { deep: true })
 
 onMounted(() => {
   loadSessions()
@@ -149,8 +163,9 @@ onMounted(() => {
     <div class="history-layout">
       <div class="history-list">
         <div v-if="loading" class="notice">Loading sessions...</div>
+        <div v-else-if="filteredSessions.length === 0" class="notice">No sessions match the current filter.</div>
         <article
-          v-for="item in sessions"
+          v-for="item in filteredSessions"
           :key="item.request_id"
           class="history-item"
           :class="{ 'history-item--active': selectedRequestId === item.request_id }"
@@ -171,6 +186,7 @@ onMounted(() => {
           </div>
           <button class="history-item__body" @click="selectedRequestId = item.request_id">
             <code>{{ item.command }}</code>
+            <small>{{ item.team_name || '—' }} · {{ item.project_name || '—' }}</small>
             <small>{{ formatRange(item.started_at, item.finished_at) }}</small>
           </button>
         </article>
@@ -188,6 +204,7 @@ onMounted(() => {
 
           <div class="history-detail__metrics">
             <span>Request: {{ detail.request_id }}</span>
+            <span>Scope: {{ detail.team_name || '—' }} / {{ detail.project_name || '—' }}</span>
             <span>{{ formatRange(detail.started_at, detail.finished_at) }}</span>
             <span>Exit: {{ detail.exit_code ?? 'n/a' }}</span>
           </div>

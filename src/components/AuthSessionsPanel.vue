@@ -2,6 +2,14 @@
 import { computed, onMounted, ref } from 'vue'
 import { authStore } from '../stores/auth'
 import { apiRequest } from '../lib/api'
+import { matchesScope, matchesTextSearch } from '../lib/scope'
+
+const props = defineProps({
+  teamId: { type: [String, Number], default: '' },
+  projectId: { type: [String, Number], default: '' },
+  searchQuery: { type: String, default: '' },
+  projects: { type: Array, default: () => [] },
+})
 
 const items = ref([])
 const loading = ref(true)
@@ -9,6 +17,14 @@ const error = ref('')
 const revoking = ref('')
 
 const currentSessionUid = computed(() => authStore.state.session?.session_uid || '')
+const filteredItems = computed(() => items.value.filter((item) => matchesScope({
+  team_id: item.user?.team_id,
+  project_id: null,
+}, {
+  teamId: props.teamId,
+  projectId: props.projectId,
+  projects: props.projects,
+}) && matchesTextSearch(item, props.searchQuery)))
 
 function formatStamp(value) {
   if (!value) {
@@ -60,6 +76,7 @@ onMounted(load)
 
     <div v-if="error" class="notice notice--error">{{ error }}</div>
     <div v-else-if="loading" class="notice">Loading auth sessions...</div>
+    <div v-else-if="filteredItems.length === 0" class="notice">No auth sessions match the current filter.</div>
     <div v-else class="table-wrap">
       <table class="data-table">
         <thead>
@@ -75,7 +92,7 @@ onMounted(load)
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in items" :key="item.session_uid">
+          <tr v-for="item in filteredItems" :key="item.session_uid">
             <td>{{ item.user?.email || item.user_id }}</td>
             <td>{{ item.user?.team_name || 'all' }}</td>
             <td>{{ formatStamp(item.created_at) }}</td>
