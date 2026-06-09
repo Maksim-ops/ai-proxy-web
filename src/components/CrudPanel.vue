@@ -36,6 +36,8 @@ const modalOpen = ref(false)
 const statusItems = ref([])
 const statusLoaded = ref(false)
 const statusOverrides = ref({})
+const copiedCellKey = ref('')
+let copiedCellTimer = null
 
 const columns = computed(() => props.fields.filter((field) => field.list !== false))
 const formFields = computed(() => props.fields.filter((field) => field.form !== false))
@@ -268,6 +270,55 @@ function formatCell(item, column) {
   return value
 }
 
+function getCellKey(item, column) {
+  return `${item.id}:${column.name}`
+}
+
+function isCopyableColumn(column, item) {
+  return Boolean(column.copyOnClick) && formatCell(item, column) !== '—'
+}
+
+async function writeToClipboard(value) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(value)
+    return
+  }
+
+  const textarea = document.createElement('textarea')
+  textarea.value = value
+  textarea.setAttribute('readonly', 'true')
+  textarea.style.position = 'absolute'
+  textarea.style.left = '-9999px'
+  document.body.appendChild(textarea)
+  textarea.select()
+  document.execCommand('copy')
+  document.body.removeChild(textarea)
+}
+
+async function copyCellValue(item, column) {
+  const value = formatCell(item, column)
+  if (value === '—') {
+    return
+  }
+
+  try {
+    await writeToClipboard(String(value))
+    const cellKey = getCellKey(item, column)
+    copiedCellKey.value = cellKey
+    if (copiedCellTimer) {
+      window.clearTimeout(copiedCellTimer)
+    }
+    copiedCellTimer = window.setTimeout(() => {
+      if (copiedCellKey.value === cellKey) {
+        copiedCellKey.value = ''
+      }
+      copiedCellTimer = null
+    }, 900)
+  } catch (err) {
+    error.value = err.message || 'Unable to copy value.'
+  }
+}
+
 function getStatusName(item) {
   return item[props.statusKey] ?? item.name
 }
@@ -398,7 +449,18 @@ onMounted(async () => {
           </thead>
           <tbody>
             <tr v-for="item in filteredItems" :key="item.id" :class="getRowClass(item)">
-              <td v-for="column in columns" :key="column.name">{{ formatCell(item, column) }}</td>
+              <td v-for="column in columns" :key="column.name">
+                <button
+                  v-if="isCopyableColumn(column, item)"
+                  type="button"
+                  class="copy-cell"
+                  :class="{ 'copy-cell--copied': copiedCellKey === getCellKey(item, column) }"
+                  @click="copyCellValue(item, column)"
+                >
+                  {{ formatCell(item, column) }}
+                </button>
+                <span v-else>{{ formatCell(item, column) }}</span>
+              </td>
               <td v-if="showStatusColumn" class="ssh-status-cell">
                 <span
                   class="ssh-indicator"

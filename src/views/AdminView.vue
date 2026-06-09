@@ -203,8 +203,8 @@ const crudConfigs = {
     allowStatusToggle: true,
     sortMode: 'kubeMasterFirst',
     fields: [
-      { name: 'name', label: 'Name' },
-      { name: 'host', label: 'Host' },
+      { name: 'name', label: 'Name', copyOnClick: true },
+      { name: 'host', label: 'Host', copyOnClick: true },
       {
         name: 'type',
         label: 'Type',

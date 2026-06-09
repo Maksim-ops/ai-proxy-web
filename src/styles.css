@@ -385,6 +385,31 @@ select {
   background: var(--danger);
 }
 
+.copy-cell {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.copy-cell--copied {
+  animation: copy-cell-flash 0.45s ease-in-out 2;
+}
+
+@keyframes copy-cell-flash {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
 .crud-layout {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
